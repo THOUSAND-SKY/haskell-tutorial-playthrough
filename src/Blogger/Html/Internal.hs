@@ -6,8 +6,8 @@ newtype Structure = Structure String
 
 type Title = String
 
-append_ :: Structure -> Structure -> Structure
-append_ (Structure a) (Structure b) = Structure $ a <> b
+instance Semigroup Structure where
+  (Structure a) <> (Structure b) = Structure $ a <> b
 
 p_ :: String -> Structure
 p_ = tag "p"
@@ -62,4 +62,4 @@ escape =
    in concatMap escapeChar
 
 el :: String -> String -> String
-el tag content = "<" <> tag <> ">" <> content <> "</" <> tag <> ">"
+el t content = "<" <> t <> ">" <> content <> "</" <> t <> ">"

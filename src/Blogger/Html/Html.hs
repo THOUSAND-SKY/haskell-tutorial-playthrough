@@ -5,7 +5,6 @@ module Blogger.Html.Html
     Title,
     p_,
     h1_,
-    append_,
     ul_,
     li_,
     ol_,

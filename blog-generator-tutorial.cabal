@@ -27,6 +27,8 @@ library
   exposed-modules:
       Blogger.Html.Html
       Blogger.Html.Internal
+      Blogger.Markup.Color
+      Blogger.Markup.Markup
       Lib
   other-modules:
       Paths_blog_generator_tutorial
@@ -54,6 +56,7 @@ test-suite blog-generator-tutorial-test
   main-is: Spec.hs
   other-modules:
       Blogger.HtmlSpec
+      Blogger.MarkupSpec
       Paths_blog_generator_tutorial
   hs-source-dirs:
       test

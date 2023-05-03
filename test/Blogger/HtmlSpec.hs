@@ -1,6 +1,6 @@
 module Blogger.HtmlSpec where
 
-import Blogger.Html.Html (html_, li_, p_, render, ul_)
+import Blogger.Html.Html (html_, p_, render, ul_)
 import Test.Hspec
 
 wrap s = "<html><head><title></title></head><body>" <> s <> "</body></html>"
@@ -18,3 +18,6 @@ spec = do
 
     it "makes lists" $ do
       wrapTest (ul_ [p_ "a", p_ "b"]) `shouldBe` wrap "<ul><li><p>a</p></li><li><p>b</p></li></ul>"
+
+    it "appends structures" $ do
+      wrapTest (p_ "test" <> p_ "test") `shouldBe` wrap "<p>test</p><p>test</p>"

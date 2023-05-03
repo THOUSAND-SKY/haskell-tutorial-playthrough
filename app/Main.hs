@@ -1,4 +1,6 @@
 module Main (main) where
 
+import Blogger.CLI (run)
+
 main :: IO ()
-main = putStrLn "test"
+main = run

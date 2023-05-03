@@ -1,13 +1,9 @@
 module Blogger.ConvertSpec where
 
 import Blogger.Convert
-import Blogger.Html.Internal (html_, render)
+import Blogger.Html.Html (render)
 import Blogger.Markup.Markup (parse)
 import Test.Hspec
-
-wrap s = "<html><head><title></title></head><body>" <> s <> "</body></html>"
-
--- wrapTest = render . html_ ""
 
 spec :: Spec
 spec = do

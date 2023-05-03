@@ -25,6 +25,8 @@ source-repository head
 
 library
   exposed-modules:
+      Blogger.Html.Html
+      Blogger.Html.Internal
       Lib
   other-modules:
       Paths_blog_generator_tutorial
@@ -51,6 +53,7 @@ test-suite blog-generator-tutorial-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Blogger.HtmlSpec
       Paths_blog_generator_tutorial
   hs-source-dirs:
       test
@@ -58,4 +61,5 @@ test-suite blog-generator-tutorial-test
   build-depends:
       base >=4.7 && <5
     , blog-generator-tutorial
+    , hspec
   default-language: Haskell2010

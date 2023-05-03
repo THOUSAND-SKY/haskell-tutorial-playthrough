@@ -3,12 +3,16 @@ module Blogger.Html.Html
     render,
     Structure,
     Title,
+    Html,
     p_,
+    h_,
     h1_,
     ul_,
     li_,
+    empty_,
     ol_,
     code_,
+    concatStructure,
   )
 where
 

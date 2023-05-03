@@ -1,5 +1,7 @@
 module Blogger.Html.Internal where
 
+import Numeric.Natural
+
 newtype Html = Html String
 
 newtype Structure = Structure String
@@ -9,11 +11,20 @@ type Title = String
 instance Semigroup Structure where
   (Structure a) <> (Structure b) = Structure $ a <> b
 
+instance Monoid Structure where
+  mempty = empty_
+
+empty_ :: Structure
+empty_ = Structure ""
+
 p_ :: String -> Structure
 p_ = tag "p"
 
 h1_ :: String -> Structure
 h1_ = tag "h1"
+
+h_ :: Natural -> String -> Structure
+h_ n = tag ("h" <> show n)
 
 li_ :: String -> Structure
 li_ = tag "li"
@@ -42,6 +53,12 @@ html_ title (Structure content) =
 
 render :: Html -> String
 render (Html s) = s
+
+concatStructure :: [Structure] -> Structure
+concatStructure c =
+  case c of
+    [] -> empty_
+    (x : xs) -> x <> mconcat xs
 
 getStructureString :: Structure -> String
 getStructureString (Structure s) = s

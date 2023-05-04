@@ -11,6 +11,9 @@ module Blogger.Html.Html
     li_,
     empty_,
     ol_,
+    txt_,
+    a_,
+    img_,
     code_,
     concatStructure,
   )

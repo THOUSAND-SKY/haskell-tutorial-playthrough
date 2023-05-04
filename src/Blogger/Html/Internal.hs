@@ -4,34 +4,50 @@ import Numeric.Natural
 
 newtype Html = Html String
 
-newtype Structure = Structure String
+data Structure = Content String | Nested Structure
 
 type Title = String
 
 instance Semigroup Structure where
-  (Structure a) <> (Structure b) = Structure $ a <> b
+  (Content a) <> (Content b) = Content $ a <> b
+  (Nested a) <> (Content b) = Content $ getStructureString a <> b
+  (Content a) <> (Nested b) = Content $ a <> getStructureString b
+  Nested a <> Nested b = a <> b
 
 instance Monoid Structure where
   mempty = empty_
 
 empty_ :: Structure
-empty_ = Structure ""
+empty_ = Content ""
 
-p_ :: String -> Structure
+txt_ :: String -> Structure
+txt_ = children . escape
+
+img_ :: FilePath -> String -> Structure
+img_ src alt =
+  children $
+    "<img src=\"" <> escape src <> "\" alt=\"" <> escape alt <> "\">"
+
+a_ :: String -> Structure -> Structure
+a_ href content =
+  children $
+    "<a href=\"" <> escape href <> "\">" <> getStructureString content <> "</a>"
+
+p_ :: Structure -> Structure
 p_ = tag "p"
 
-h1_ :: String -> Structure
+h1_ :: Structure -> Structure
 h1_ = tag "h1"
 
-h_ :: Natural -> String -> Structure
+h_ :: Natural -> Structure -> Structure
 h_ n = tag ("h" <> show n)
 
-li_ :: String -> Structure
+li_ :: Structure -> Structure
 li_ = tag "li"
 
 listing :: String -> [Structure] -> Structure
 listing t =
-  Structure . el t . concatMap (el "li" . getStructureString)
+  children . el t . concatMap (el "li" . getStructureString)
 
 ul_ :: [Structure] -> Structure
 ul_ =
@@ -42,14 +58,14 @@ ol_ =
   listing "ol"
 
 code_ :: String -> Structure
-code_ = tag "pre"
+code_ = tag "pre" . txt_
 
 html_ :: Title -> Structure -> Html
-html_ title (Structure content) =
+html_ title content =
   Html $
     el "html" $
       el "head" (el "title" title)
-        <> el "body" content
+        <> el "body" (getStructureString content)
 
 render :: Html -> String
 render (Html s) = s
@@ -61,10 +77,20 @@ concatStructure c =
     (x : xs) -> x <> mconcat xs
 
 getStructureString :: Structure -> String
-getStructureString (Structure s) = s
+getStructureString s =
+  case s of
+    Content c -> c
+    Nested c -> getStructureString c
 
-tag :: String -> String -> Structure
-tag t c = Structure . el t $ escape c
+-- Structure s_ -> getStructureString s_
+
+tag :: String -> Structure -> Structure
+tag t c =
+  case c of
+    Content str -> children $ el t $ escape str
+    Nested nc -> children $ el t $ getStructureString nc
+
+-- tag t c = Structure . el t $ getStructureString c
 
 escape :: String -> String
 escape =
@@ -80,3 +106,6 @@ escape =
 
 el :: String -> String -> String
 el t content = "<" <> t <> ">" <> content <> "</" <> t <> ">"
+
+children :: String -> Structure
+children = Nested . Content

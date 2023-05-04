@@ -64,10 +64,10 @@ outputWriter output =
   case output of
     Stdout ->
       return stdout
-    OutputFile f -> do
+    OutputFile f replace -> do
       exists <- doesFileExist f
       let write = openFile f WriteMode
-      if exists
+      if exists && not replace
         then confirm >>= bool write exitFailure
         else write
 

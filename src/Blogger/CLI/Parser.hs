@@ -15,8 +15,10 @@ data SingleInput
 
 data SingleOutput
   = Stdout
-  | OutputFile FilePath
+  | OutputFile FilePath OutputReplace
   deriving (Show)
+
+type OutputReplace = Bool
 
 pInputFile :: Parser SingleInput
 pInputFile = fmap InputFile parser
@@ -30,14 +32,20 @@ pInputFile = fmap InputFile parser
         )
 
 pOutputFile :: Parser SingleOutput
-pOutputFile = OutputFile <$> parser
+pOutputFile = OutputFile <$> output <*> replace
   where
-    parser =
+    output =
       strOption
         ( long "output"
             <> short 'o'
             <> metavar "FILE"
             <> help "Output file"
+        )
+    replace =
+      switch
+        ( long "replace"
+            <> short 'r'
+            <> help "Overwrite output"
         )
 
 pSingleInput :: Parser SingleInput

@@ -22,6 +22,7 @@ description: Please see the README on GitHub at <https://github.com/githubuser/b
 dependencies:
   - base >= 4.7 && < 5
   - directory
+  - optparse-applicative
 
 ghc-options:
   - -Wall
@@ -47,6 +48,7 @@ executables:
       - -with-rtsopts=-N
     dependencies:
       - blog-generator-tutorial
+      - optparse-applicative
 
 tests:
   blog-generator-tutorial-test:
@@ -59,3 +61,4 @@ tests:
     dependencies:
       - blog-generator-tutorial
       - hspec
+      - optparse-applicative

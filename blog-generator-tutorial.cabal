@@ -26,6 +26,7 @@ source-repository head
 library
   exposed-modules:
       Blogger.CLI
+      Blogger.CLI.Parser
       Blogger.Convert
       Blogger.Html.Html
       Blogger.Html.Internal
@@ -40,6 +41,7 @@ library
   build-depends:
       base >=4.7 && <5
     , directory
+    , optparse-applicative
   default-language: Haskell2010
 
 executable blog-generator-tutorial-exe
@@ -53,6 +55,7 @@ executable blog-generator-tutorial-exe
       base >=4.7 && <5
     , blog-generator-tutorial
     , directory
+    , optparse-applicative
   default-language: Haskell2010
 
 test-suite blog-generator-tutorial-test
@@ -72,4 +75,5 @@ test-suite blog-generator-tutorial-test
     , blog-generator-tutorial
     , directory
     , hspec
+    , optparse-applicative
   default-language: Haskell2010

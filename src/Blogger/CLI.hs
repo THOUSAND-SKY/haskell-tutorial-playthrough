@@ -1,50 +1,80 @@
-{-# LANGUAGE LambdaCase #-}
-
 module Blogger.CLI where
 
-import Blogger.Convert (process)
+import Blogger.CLI.Parser
+import Blogger.Convert (convert)
+import Blogger.Html.Html as Html
+import Blogger.Markup.Markup as Markup
+import Data.Bool (bool)
+import Options.Applicative
 import System.Directory (doesFileExist)
-import System.Environment as Env (getArgs)
+import System.Directory.Internal.Prelude (exitFailure)
+import System.IO
+
+convertSingle :: Html.Title -> Handle -> Handle -> IO ()
+convertSingle title input output = do
+  content <- hGetContents input
+  hPutStrLn output (process title content)
+
+process :: Html.Title -> String -> String
+process t = Html.render . convert t . Markup.parse
+
+convertDirectory :: FilePath -> FilePath -> IO ()
+convertDirectory = error "Not implemented"
+
+parseOpts :: IO Options
+parseOpts =
+  execParser opts
+  where
+    opts =
+      info
+        (pOptions <**> helper)
+        -- I wonder how to omit these?
+        ( fullDesc
+            <> header "hs-blog-gen - a static blog generator"
+            <> progDesc "Convert markup files or directories to html"
+        )
 
 run :: IO ()
 run = do
-  args <- Env.getArgs
-  input <- getInput args
-  output <- getOutputWriter args
-  output $ process "test" input
-  putStrLn "x"
+  opts <- parseOpts
+  case opts of
+    ConvertSingle input output -> do
+      (title, iHandle) <- inputWriter input
+      oHandle <- outputWriter output
 
-getInput :: [String] -> IO String
-getInput args =
-  case args of
-    [] -> getContents
-    (inFile : _) -> do
-      c <- doesFileExist inFile
-      if c then readFile inFile else return ""
+      convertSingle title iHandle oHandle
 
-getOutputWriter :: [String] -> IO (String -> IO ())
-getOutputWriter args =
-  case args of
-    [] -> pure putStrLn
-    (_ : outFile : _) -> pure $ writeOut outFile
-    _ -> error "messed"
+      hClose iHandle
+      hClose oHandle
+    ConvertDir _ _ ->
+      error "err"
 
-writeOut :: String -> String -> IO ()
-writeOut fp content = do
-  exists <- doesFileExist fp
-  let writeResult = writeFile fp content
-  if exists
-    then
-      promptOverwrite
-        >>= \case
-          False -> putStrLn "Aborted"
-          True -> writeResult
-    else writeResult
+inputWriter :: SingleInput -> IO (String, Handle)
+inputWriter input =
+  case input of
+    Stdin ->
+      return ("", stdin)
+    InputFile f ->
+      -- same as
+      -- openFile f ReadMode >>= \x -> return (f,x)
+      (,) f <$> openFile f ReadMode
 
-promptOverwrite :: IO Bool
-promptOverwrite = do
+outputWriter :: SingleOutput -> IO Handle
+outputWriter output =
+  case output of
+    Stdout ->
+      return stdout
+    OutputFile f -> do
+      exists <- doesFileExist f
+      let write = openFile f WriteMode
+      if exists
+        then confirm >>= bool write exitFailure
+        else write
+
+confirm :: IO Bool
+confirm = do
   putStrLn "File exists. Overwrite?"
   res <- getLine
   case res of
-    "y" -> return $ True
+    "y" -> return True
     _ -> return False

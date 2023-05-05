@@ -84,19 +84,30 @@ applyIoOnList action inputs = do
         )
     pure (input, maybeResult)
 
+-- | Filter out unsuccessful operations on files and report errors to stderr.
 filterAndReportFailures :: [(a, Either String b)] -> IO [(a, b)]
-filterAndReportFailures xs = do
-  let printErr err = hPutStrLn stderr ("Error: " ++ err)
-  let ys =
-        map
-          ( \(x, y) ->
-              case y of
-                Left err -> printErr err $> Nothing
-                Right z -> return $ Just (x, z)
-          )
-          xs
-  zs <- sequence ys
-  return (catMaybes zs)
+filterAndReportFailures =
+  foldMap $ \(file, contentOrErr) ->
+    case contentOrErr of
+      Left err -> do
+        hPutStrLn stderr err
+        pure []
+      Right content ->
+        pure [(file, content)]
+
+-- filterAndReportFailures :: [(a, Either String b)] -> IO [(a, b)]
+-- filterAndReportFailures xs = do
+--   let printErr err = hPutStrLn stderr ("Error: " ++ err)
+--   let ys =
+--         map
+--           ( \(x, y) ->
+--               case y of
+--                 Left err -> printErr err $> Nothing
+--                 Right z -> return $ Just (x, z)
+--           )
+--           xs
+--   zs <- sequence ys
+--   return (catMaybes zs)
 
 -- let (errs, vals) = partition (isLeft . snd) xs
 -- for_ errs $ \(_, v) ->

@@ -2,12 +2,14 @@
 module Blogger.Directory
   ( applyIoOnList,
     filterAndReportFailures,
+    txtsToRenderedHtml,
   )
 where
 
 -- convertDirectory,
 -- buildIndex,
 
+import Blogger.Blog (buildIndex)
 import Blogger.Convert (convert, convertStructure)
 import Blogger.Html.Html as Html
 import Blogger.Markup.Markup as Markup
@@ -38,9 +40,9 @@ import System.FilePath
 import System.IO (hPutStrLn, stderr)
 
 -- | Copy files from one directory to another, converting '.txt' files to
---   '.html' files in the process. Recording unsuccessful reads and writes to stderr.
---
--- May throw an exception on output directory creation.
+-- '.html' files in the process. Recording unsuccessful reads and writes to stderr.
+
+-- -- May throw an exception on output directory creation.
 -- convertDirectory :: FilePath -> FilePath -> IO ()
 -- convertDirectory inputDir outputDir = do
 --   DirContents filesToProcess filesToCopy <- getDirFilesAndContent inputDir
@@ -50,27 +52,27 @@ import System.IO (hPutStrLn, stderr)
 --   writeFiles outputDir outputHtmls
 --   putStrLn "Done."
 
--- -- | The relevant directory content for our application
--- data DirContents = DirContents
---   { -- | File paths and their content
---     dcFilesToProcess :: [(FilePath, String)],
---     -- | Other file paths, to be copied directly
---     dcFilesToCopy :: [FilePath]
---   }
+-- | The relevant directory content for our application
+data DirContents = DirContents
+  { -- | File paths and their content
+    dcFilesToProcess :: [(FilePath, String)],
+    -- | Other file paths, to be copied directly
+    dcFilesToCopy :: [FilePath]
+  }
 
--- -- | Returns the directory content
--- getDirFilesAndContent :: FilePath -> IO DirContents
--- getDirFilesAndContent inputDir = do
---   files <- map (inputDir </>) <$> listDirectory inputDir
---   let (txtFiles, otherFiles) =
---         partition ((== ".txt") . takeExtension) files
---   txtFilesAndContent <-
---     applyIoOnList readFile txtFiles >>= filterAndReportFailures
---   pure $
---     DirContents
---       { dcFilesToProcess = txtFilesAndContent,
---         dcFilesToCopy = otherFiles
---       }
+-- | Returns the directory content
+getDirFilesAndContent :: FilePath -> IO DirContents
+getDirFilesAndContent inputDir = do
+  files <- map (inputDir </>) <$> listDirectory inputDir
+  let (txtFiles, otherFiles) =
+        partition ((== ".txt") . takeExtension) files
+  txtFilesAndContent <-
+    applyIoOnList readFile txtFiles >>= filterAndReportFailures
+  pure $
+    DirContents
+      { dcFilesToProcess = txtFilesAndContent,
+        dcFilesToCopy = otherFiles
+      }
 
 -- | Try to apply an IO function on a list of values, document successes and failures
 applyIoOnList :: (a -> IO b) -> [a] -> IO [(a, Either String b)]
@@ -95,32 +97,45 @@ filterAndReportFailures =
       Right content ->
         pure [(file, content)]
 
--- filterAndReportFailures :: [(a, Either String b)] -> IO [(a, b)]
--- filterAndReportFailures xs = do
---   let printErr err = hPutStrLn stderr ("Error: " ++ err)
---   let ys =
---         map
---           ( \(x, y) ->
---               case y of
---                 Left err -> printErr err $> Nothing
---                 Right z -> return $ Just (x, z)
---           )
---           xs
---   zs <- sequence ys
---   return (catMaybes zs)
+whenIO :: IO Bool -> IO () -> IO ()
+whenIO a b = a >>= flip when b
 
--- let (errs, vals) = partition (isLeft . snd) xs
--- for_ errs $ \(_, v) ->
---   case v of
---     Left err ->
---     Right _ -> return ()
--- return $ for vals $ \(a, b) ->
---   case b of
---     Right
+-- | Creates an output directory or terminates the program
+createOutputDirectoryOrExit :: FilePath -> IO ()
+createOutputDirectoryOrExit outputDir =
+  whenIO
+    (not <$> createOutputDirectory outputDir)
+    (hPutStrLn stderr "Cancelled." *> exitFailure)
 
--- for_ errs $ \(_, err) ->
--- traverse $ \(a, b) -> do
---   return []
--- case b of
---   Left err -> hPutStrLn stderr $ "Error: " ++ err
---   Right val -> val
+-- | Creates the output directory.
+--   Returns whether the directory was created or not.
+createOutputDirectory :: FilePath -> IO Bool
+createOutputDirectory dir = do
+  dirExists <- doesDirectoryExist dir
+  create <-
+    if dirExists
+      then do
+        override <- confirm "Output directory exists. Override?"
+        when override (removeDirectoryRecursive dir)
+        pure override
+      else pure True
+  when create (createDirectory dir)
+  pure create
+
+confirm :: String -> IO Bool
+confirm prompt = do
+  putStrLn prompt
+  res <- getLine
+  case res of
+    "y" -> return True
+    _ -> return False
+
+-- | Convert text files to Markup, build an index, and render as html.
+txtsToRenderedHtml :: [(FilePath, String)] -> [(FilePath, String)]
+txtsToRenderedHtml xs =
+  let replaceFileExt name = takeBaseName name <.> "html"
+      entry (file, content) = (replaceFileExt file, Markup.parse content)
+      outputs = map entry xs
+      convertFile (n, c) = (n, convert n c)
+      index = ("index.html", buildIndex outputs)
+   in map (fmap Html.render) $ index : map convertFile outputs

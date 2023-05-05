@@ -8,8 +8,8 @@ where
 -- buildIndex,
 
 import Blogger.Convert (convert, convertStructure)
-import qualified Blogger.Html.Html as Html
-import qualified Blogger.Markup.Markup as Markup
+import Blogger.Html.Html as Html
+import Blogger.Markup.Markup as Markup
 import Control.Exception (SomeException (..), catch, displayException, try)
 import Control.Monad (void, when)
 import Data.Bifunctor (first)
@@ -67,22 +67,17 @@ import System.IO (hPutStrLn, stderr)
 --         dcFilesToCopy = otherFiles
 --       }
 
-
+-- | Try to apply an IO function on a list of values, document successes and failures
 applyIoOnList :: (a -> IO b) -> [a] -> IO [(a, Either String b)]
-applyIoOnList f =
-  traverse mapper
-  where
-    -- mapper :: a -> IO (a, Either String b)
-    mapper a =
-      let fn b = do
-            res <- try $ f b
-            -- How would I correctly type this one??
-            -- It fails on the `b` because that's not bound to the above `b`.
-            -- return $ first displayException (res :: Either SomeException b)
-            case res of
-              Left e -> return $ Left $ displayException (e :: SomeException)
-              Right val -> return $ Right val
-       in (,) a <$> fn a
+applyIoOnList action inputs = do
+  for inputs $ \input -> do
+    maybeResult <-
+      catch
+        (Right <$> action input)
+        ( \(SomeException e) -> do
+            pure $ Left (displayException e)
+        )
+    pure (input, maybeResult)
 
 -- case as of
 --   (x:xs) -> do

@@ -5,6 +5,7 @@ import Numeric.Natural
 newtype Html = Html String
 
 data Structure = Content String | Nested Structure
+  deriving (Eq, Show)
 
 type Title = String
 

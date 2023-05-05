@@ -4,6 +4,7 @@ import Blogger.CLI.Parser
 import Blogger.Convert (convert)
 import Blogger.Html.Html as Html
 import Blogger.Markup.Markup as Markup
+import Control.Exception (bracket)
 import Data.Bool (bool)
 import Options.Applicative
 import System.Directory (doesFileExist)
@@ -39,25 +40,22 @@ run = do
   opts <- parseOpts
   case opts of
     ConvertSingle input output -> do
-      (title, iHandle) <- inputWriter input
-      oHandle <- outputWriter output
+      let (title, iHandle) = inputWriter input
+      let oHandle = outputWriter output
 
-      convertSingle title iHandle oHandle
-
-      hClose iHandle
-      hClose oHandle
+      bracket iHandle hClose $ \i ->
+        bracket oHandle hClose $ \o ->
+          convertSingle title i o
     ConvertDir _ _ ->
       error "err"
 
-inputWriter :: SingleInput -> IO (String, Handle)
+inputWriter :: SingleInput -> (String, IO Handle)
 inputWriter input =
   case input of
     Stdin ->
-      return ("", stdin)
+      ("", pure stdin)
     InputFile f ->
-      -- same as
-      -- openFile f ReadMode >>= \x -> return (f,x)
-      (,) f <$> openFile f ReadMode
+      (f, openFile f ReadMode)
 
 outputWriter :: SingleOutput -> IO Handle
 outputWriter output =

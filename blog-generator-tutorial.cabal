@@ -25,6 +25,7 @@ source-repository head
 
 library
   exposed-modules:
+      Blogger.Blog
       Blogger.CLI
       Blogger.CLI.Parser
       Blogger.Convert
@@ -62,6 +63,7 @@ test-suite blog-generator-tutorial-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Blogger.BlogSpec
       Blogger.CLISpec
       Blogger.ConvertSpec
       Blogger.HtmlSpec

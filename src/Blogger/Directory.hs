@@ -1,6 +1,7 @@
 -- | Process multiple files and convert directories
 module Blogger.Directory
   ( applyIoOnList,
+    filterAndReportFailures,
   )
 where
 
@@ -10,10 +11,14 @@ where
 import Blogger.Convert (convert, convertStructure)
 import Blogger.Html.Html as Html
 import Blogger.Markup.Markup as Markup
-import Control.Exception (SomeException (..), catch, displayException, try)
+import Control.Exception (SomeException (..), catch, displayException)
 import Control.Monad (void, when)
-import Data.Bifunctor (first)
+import Data.Bifunctor (Bifunctor (second))
+import Data.Either (isLeft)
+import Data.Foldable (for_)
+import Data.Functor (($>))
 import Data.List (partition)
+import Data.Maybe (catMaybes, maybeToList)
 import Data.Traversable (for)
 import System.Directory
   ( copyFile,
@@ -79,10 +84,32 @@ applyIoOnList action inputs = do
         )
     pure (input, maybeResult)
 
--- case as of
---   (x:xs) -> do
---     result <- f x
---     return []
---     -- f x : applyIoOnList xs
---   [] ->
---     return []
+filterAndReportFailures :: [(a, Either String b)] -> IO [(a, b)]
+filterAndReportFailures xs = do
+  let printErr err = hPutStrLn stderr ("Error: " ++ err)
+  let ys =
+        map
+          ( \(x, y) ->
+              case y of
+                Left err -> printErr err $> Nothing
+                Right z -> return $ Just (x, z)
+          )
+          xs
+  zs <- sequence ys
+  return (catMaybes zs)
+
+-- let (errs, vals) = partition (isLeft . snd) xs
+-- for_ errs $ \(_, v) ->
+--   case v of
+--     Left err ->
+--     Right _ -> return ()
+-- return $ for vals $ \(a, b) ->
+--   case b of
+--     Right
+
+-- for_ errs $ \(_, err) ->
+-- traverse $ \(a, b) -> do
+--   return []
+-- case b of
+--   Left err -> hPutStrLn stderr $ "Error: " ++ err
+--   Right val -> val

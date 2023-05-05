@@ -25,3 +25,10 @@ spec = do
           )
           ["a"]
       x `shouldBe` [("a", Right "a")]
+
+  describe "filterAndReportFailures" $ do
+    it "should filter and report failures" $ do
+      filterAndReportFailures [("a", Left "b" :: Either String String)] `shouldReturn` []
+
+    it "should return good ones" $ do
+      filterAndReportFailures [("a", Right "b" :: Either String String)] `shouldReturn` [("a", "b")]

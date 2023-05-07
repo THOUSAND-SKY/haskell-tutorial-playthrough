@@ -1,6 +1,8 @@
 module Blogger.DirectorySpec where
 
 import Blogger.Directory
+import Blogger.Env (blankEnv, defaultEnv)
+import Control.Monad.Trans.Reader
 import Test.Hspec
 
 spec :: Spec
@@ -15,7 +17,7 @@ spec = do
               return "a"
           )
           ["a"]
-      x `shouldBe` [("a", Left "asd\nCallStack (from HasCallStack):\n  error, called at test/Blogger/DirectorySpec.hs:14:20 in main:Blogger.DirectorySpec")]
+      x `shouldBe` [("a", Left "asd\nCallStack (from HasCallStack):\n  error, called at test/Blogger/DirectorySpec.hs:16:20 in main:Blogger.DirectorySpec")]
 
     it "should work when no error" $ do
       x <-
@@ -33,7 +35,6 @@ spec = do
     it "should return good ones" $ do
       filterAndReportFailures [("a", Right "b" :: Either String String)] `shouldReturn` [("a", "b")]
 
--- Turning this into Reader made it laborious to test. This is why splitting up funcs is good?
--- describe "txtsToRenderedHtml" $ do
---   it "should work" $ do
---     txtsToRenderedHtml [("a.txt", "hello")] `shouldContain` [("a.html", "<html><head><title>a.html</title></head><body><p>hello</p></body></html>")]
+    describe "txtsToRenderedHtml" $ do
+      it "should work" $ do
+        runReader (txtsToRenderedHtml [("a.txt", "hello")]) defaultEnv `shouldContain` [("a.html", "<html><head><title>My Blog - a.html</title><style src=\"style.css\"></style></head><body><p>hello</p></body></html>")]

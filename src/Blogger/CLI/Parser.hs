@@ -1,11 +1,12 @@
 module Blogger.CLI.Parser where
 
+import Blogger.Env (Env (..))
 import Data.Maybe (fromMaybe)
 import Options.Applicative
 
 data Options
   = ConvertSingle SingleInput SingleOutput
-  | ConvertDir FilePath FilePath
+  | ConvertDir FilePath FilePath Env
   deriving (Show)
 
 data SingleInput
@@ -88,9 +89,25 @@ pOutputDir =
         <> help "Output directory"
     )
 
+pEnv :: Parser Env
+pEnv =
+  Env
+    <$> strOption
+      ( long "blog-name"
+          <> short 'n'
+          <> metavar "NAME"
+          <> help "Name of blog"
+      )
+    <*> strOption
+      ( long "stylesheet-path"
+          <> short 's'
+          <> metavar "FILE"
+          <> help "Styles.css?"
+      )
+
 pConvertDir :: Parser Options
 pConvertDir =
-  ConvertDir <$> pInputDir <*> pOutputDir
+  ConvertDir <$> pInputDir <*> pOutputDir <*> pEnv
 
 pConvertDirInfo :: ParserInfo Options
 pConvertDirInfo =

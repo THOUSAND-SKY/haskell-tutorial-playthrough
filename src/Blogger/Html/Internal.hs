@@ -4,6 +4,14 @@ import Numeric.Natural
 
 newtype Html = Html String
 
+newtype HeadStructure = HeadStructure Structure
+
+instance Semigroup HeadStructure where
+  (HeadStructure a) <> (HeadStructure b) = HeadStructure $ a <> b
+
+instance Monoid HeadStructure where
+  mempty = HeadStructure empty_
+
 data Structure = Content String | Nested Structure
   deriving (Eq, Show)
 
@@ -61,12 +69,26 @@ ol_ =
 code_ :: String -> Structure
 code_ = tag "pre" . txt_
 
-html_ :: Title -> Structure -> Html
-html_ title content =
+html_ :: HeadStructure -> Structure -> Html
+html_ (HeadStructure docHead) content =
   Html $
     el "html" $
-      el "head" (el "title" title)
+      el "head" (getStructureString docHead)
         <> el "body" (getStructureString content)
+
+title_ :: String -> HeadStructure
+title_ = headEl . el "title"
+
+-- vulnerable. don't care.
+stylesheet_ :: String -> HeadStructure
+stylesheet_ s =
+  headEl $
+    "<style src=\"" <> escape s <> "\"></style>"
+
+meta_ :: String -> String -> HeadStructure
+meta_ name content =
+  headEl $
+    "<meta name=\"" <> escape name <> "\" content=\"" <> escape content <> "\">"
 
 render :: Html -> String
 render (Html s) = s
@@ -82,8 +104,6 @@ getStructureString s =
   case s of
     Content c -> c
     Nested c -> getStructureString c
-
--- Structure s_ -> getStructureString s_
 
 tag :: String -> Structure -> Structure
 tag t c =
@@ -107,6 +127,9 @@ escape =
 
 el :: String -> String -> String
 el t content = "<" <> t <> ">" <> content <> "</" <> t <> ">"
+
+headEl :: String -> HeadStructure
+headEl = HeadStructure . Content
 
 children :: String -> Structure
 children = Nested . Content

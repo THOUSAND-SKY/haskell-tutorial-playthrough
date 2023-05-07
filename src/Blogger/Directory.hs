@@ -11,10 +11,12 @@ where
 
 import Blogger.Blog (buildIndex)
 import Blogger.Convert (convert, convertStructure)
+import Blogger.Env (AppEnv, Env (eBlogName))
 import Blogger.Html.Html as Html
 import Blogger.Markup.Markup as Markup
 import Control.Exception (SomeException (..), catch, displayException)
 import Control.Monad (void, when)
+import Control.Monad.Trans.Reader (Reader, ask)
 import Data.Bifunctor (Bifunctor (second))
 import Data.Either (isLeft)
 import Data.Foldable (for_)
@@ -131,11 +133,30 @@ confirm prompt = do
     _ -> return False
 
 -- | Convert text files to Markup, build an index, and render as html.
-txtsToRenderedHtml :: [(FilePath, String)] -> [(FilePath, String)]
-txtsToRenderedHtml xs =
+txtsToRenderedHtml :: [(FilePath, String)] -> AppEnv [(FilePath, String)]
+txtsToRenderedHtml xs = do
   let replaceFileExt name = takeBaseName name <.> "html"
-      entry (file, content) = (replaceFileExt file, Markup.parse content)
-      outputs = map entry xs
-      convertFile (n, c) = (n, convert n c)
-      index = ("index.html", buildIndex outputs)
-   in map (fmap Html.render) $ index : map convertFile outputs
+  let entry (file, content) = (replaceFileExt file, Markup.parse content)
+  let outputs = map entry xs
+  env <- ask
+  let convertFile (n, c) = (n, convert env n c)
+  newOutputs <- buildIndex outputs
+  let index = (eBlogName env, newOutputs)
+  return $ map (fmap Html.render) $ index : map convertFile outputs
+
+applyIoOnListReportErrors :: (a -> IO b) -> [a] -> IO [(a, b)]
+applyIoOnListReportErrors a b =
+  applyIoOnList a b >>= filterAndReportFailures
+
+-- | Copy files to a directory, recording errors to stderr.
+copyFiles :: FilePath -> [FilePath] -> IO ()
+copyFiles outputDir files = do
+  let copyFromTo file = copyFile file (outputDir </> takeFileName file)
+  void $ applyIoOnListReportErrors copyFromTo files
+
+-- | Write files to a directory, recording errors to stderr.
+writeFiles :: FilePath -> [(FilePath, String)] -> IO ()
+writeFiles outputDir files = do
+  let writeFileContent (file, content) =
+        writeFile (outputDir </> file) content
+  void $ applyIoOnListReportErrors writeFileContent files

@@ -15,6 +15,10 @@ module Blogger.Html.Html
     img_,
     code_,
     concatStructure,
+    title_,
+    meta_,
+    stylesheet_,
+    HeadStructure,
   )
 where
 

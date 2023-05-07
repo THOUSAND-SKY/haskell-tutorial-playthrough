@@ -1,5 +1,6 @@
 module Blogger.Convert where
 
+import Blogger.Env (Env (eBlogName, eStylesheetPath))
 import Blogger.Html.Html as Html
 import Blogger.Markup.Markup as Markup
 
@@ -17,5 +18,7 @@ convertStructure structure =
     Markup.CodeBlock list ->
       Html.code_ (unlines list)
 
-convert :: Html.Title -> Markup.Document -> Html.Html
-convert title = Html.html_ title . foldMap convertStructure
+convert :: Env -> String -> Markup.Document -> Html.Html
+convert env t =
+  let h = Html.title_ (eBlogName env <> " - " <> t) <> Html.stylesheet_ (eStylesheetPath env)
+   in Html.html_ h . foldMap convertStructure

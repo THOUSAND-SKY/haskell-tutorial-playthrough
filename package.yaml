@@ -24,6 +24,7 @@ dependencies:
   - directory
   - optparse-applicative
   - filepath
+  - transformers
 
 ghc-options:
   - -Wall

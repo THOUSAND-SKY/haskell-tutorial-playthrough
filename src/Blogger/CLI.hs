@@ -2,24 +2,26 @@ module Blogger.CLI where
 
 import Blogger.CLI.Parser
 import Blogger.Convert (convert)
+import Blogger.Env (Env, defaultEnv)
 import Blogger.Html.Html as Html
 import Blogger.Markup.Markup as Markup
 import Control.Exception (bracket)
+import Control.Monad.Trans.Reader (withReader)
 import Data.Bool (bool)
 import Options.Applicative
 import System.Directory (doesFileExist)
 import System.Directory.Internal.Prelude (exitFailure)
 import System.IO
 
-convertSingle :: Html.Title -> Handle -> Handle -> IO ()
+convertSingle :: String -> Handle -> Handle -> IO ()
 convertSingle title input output = do
   content <- hGetContents input
   hPutStrLn output (process title content)
 
-process :: Html.Title -> String -> String
-process t = Html.render . convert t . Markup.parse
+process :: String -> String -> String
+process t = Html.render . convert defaultEnv t . Markup.parse
 
-convertDirectory :: FilePath -> FilePath -> IO ()
+convertDirectory :: Env -> FilePath -> FilePath -> IO ()
 convertDirectory = error "Not implemented"
 
 parseOpts :: IO Options
@@ -46,8 +48,8 @@ run = do
       bracket iHandle hClose $ \i ->
         bracket oHandle hClose $ \o ->
           convertSingle title i o
-    ConvertDir _ _ ->
-      error "err"
+    ConvertDir input output env ->
+      convertDirectory env input output
 
 inputWriter :: SingleInput -> (String, IO Handle)
 inputWriter input =
